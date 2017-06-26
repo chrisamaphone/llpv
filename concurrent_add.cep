@@ -1,0 +1,68 @@
+% Carsten's program:
+% {x=0} x := x+1 || x := x+2 {x=3}
+
+location : type.
+value : type.
+at location value : pred.
+
+read : at Loc Val -o at Loc Val * computed Val.
+
+assign : at Loc Val * computed V' -o at Loc Val'.
+
+add : computed X * computed Y -o computed (plus X Y).
+
+
+x : location.
+v0 : value.
+v1 : value.
+v2 : value.
+plus value value : value.
+
+context init =
+{at x v0, computed v1, computed v2}.
+
+%
+%  prog1 = \xv:at x V. 
+%           [read xv] as <xv:at x V, cv:computed V>.
+%           [add c1 cv] as <cv1 : computed (plus v1 V).
+%           [assign xv cv1] as <av1 : at x (plus v1 V).
+%             {av1}
+%   : all V. at x V -o at x (plus v1 V)
+%
+% prog2 = \xv:at x V.
+%           [read xv] as <xv:at x V, cv:computed V>.
+%           [add c2 cv] as <cv2 : computed (plus v2 V).
+%           [assign xv cv2] as <av1 : at x (plus v2 V).
+%             {av1}
+%   : all V. at x V -o at x (plus v2 V)
+%
+%
+% Execution:
+%
+%   {ax0: at x v0, c1: computed v1, c2: computed v2, prog1, prog2}
+%   ---(prog 1 fires on ax0)
+%   {ax1 : at x (plus v1 v0), c2: computed v2, prog2}
+%   ---(prog 2 fires on ax1)
+%   {ax2 : at x (plus v2 (plus v1 v0))}
+%
+% Alternatively, prog2 fires first and then prog1, resulting in:
+%   {ax2 : at x (plus v1 (plus v2 v0))}
+% which is equivalent by commutativity of plus.
+%
+%
+% Overall property:
+% all V. at x V -o at x (V + 3)
+%
+% If Delta = {at x 0, tprog1, tprog2}
+% then the only complete proofs of the form Delta |- _
+% are "Delta |- at x 3"
+%
+% The broken version of the program would have a different type:
+% all V. at x V -o at x V * (all V'. at x V' -o at x (V + 1))
+%
+%
+
+
+
+
+

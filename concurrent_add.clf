@@ -1,0 +1,10 @@
+% Carsten's program:
+% {x=0} x := x+1 || x := x+2 {x=3}
+
+read : at Loc Val -o {at Loc Val * computed Val}.
+
+assign : at Loc Val * computed V' -o {at Loc Val'}.
+
+add : computed X * computed Y * plus X Y Z -o {computed Z}.
+
+
