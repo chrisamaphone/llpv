@@ -20,7 +20,8 @@ process : prop -> type.
 
 % resource : Pi a:atom. process (at a).
 pair : process A -o process B -o process (tensor A B).
-lett : process A -o (process A -o process B) 
+null : process one.
+leta : process (at A) -o (process (at A) -o process B) 
            -o process B.
 letp : process (tensor A B) -o (process A -o process B -o process C)
            -o process C.
@@ -29,18 +30,31 @@ lambda : Pi A:prop. (process A -o process B) -o process (lolli A B).
 % resource : Pi A:prop. process A.
 
 
+% Left rule judgment
 active : Pi A:prop. process A -> type.
 
-% op sem
+% Right rule judgment
+provable : Pi A:prop. process A -> type.
+
+% Right rules
+provable/active : provable A X o- {active A X}.
+provable/tensor : provable (tensor T1 T2) (pair M1 M2) 
+                o- provable T1 M1 * provable T2 M2.
+provable/lolli  : provable (lolli T1 T2) (lambda T1 M) o- 
+                      (Pi x.provable T1 x -o provable T2 (M x)).
+provable/one    : provable one null.
+
+% Operational semantics (left rules)
 tens_left : active (tensor T1 T2) (pair P1 P2) -o {active T1 P1 * active T2 P2}.
 beta : active B (app (lambda A M) (P : process A)) -o
                 {active B (M P)}.
-loll_left : active (lolli A B) P1 * active A P2 -o
+loll_left : active (lolli A B) P1 * provable A P2 -o
                 {active B (app P1 P2)}.
-mon_left : active B (lett M (P : process A -o process B)) -o 
-               {Exists x:process A. active B (P x)}. 
+mona_left : active B (leta (M : process (at A)) (P : process (at A) -o process B)) -o 
+               {Exists x:process (at A). active B (P x)}. 
 monp_left : active C (letp M (P : process A -o process B -o process C)) -o
                {Exists x:process A.Exists y:process B. active C (P x y)}.
+
 
 % test
 
