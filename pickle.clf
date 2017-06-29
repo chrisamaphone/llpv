@@ -1,5 +1,7 @@
 % Substructural operational semantics of Pickle (DILL-based programs)
 
+%% Propositions %%
+
 atom : type.
 % ... : atom
 a : atom.
@@ -12,36 +14,57 @@ one : prop.
 tensor : prop -> prop -> prop.
 lolli : prop -> prop -> prop.
 
+%% Terms/procs %%
+
 process : prop -> type.
 
 % resource : Pi a:atom. process (at a).
-pair : process A -> process B -> process (tensor A B).
-letpair : process (tensor A B) -> (process A -> process B -> process C) 
-           -> process C.
-app : process (lolli A B) -> process A -> process B.
-lambda : Pi A:prop. (process A -> process B) -> process (lolli A B).
-resource : Pi A:prop. process A.
+pair : process A -o process B -o process (tensor A B).
+lett : process A -o (process A -o process B) 
+           -o process B.
+letp : process (tensor A B) -o (process A -o process B -o process C)
+           -o process C.
+app : process (lolli A B) -o process A -o process B.
+lambda : Pi A:prop. (process A -o process B) -o process (lolli A B).
+% resource : Pi A:prop. process A.
+
 
 active : Pi A:prop. process A -> type.
 
 % op sem
 tens_left : active (tensor T1 T2) (pair P1 P2) -o {active T1 P1 * active T2 P2}.
 beta : active B (app (lambda A M) (P : process A)) -o
-                {active B (M !P)}.
+                {active B (M P)}.
 loll_left : active (lolli A B) P1 * active A P2 -o
                 {active B (app P1 P2)}.
-
+mon_left : active B (lett M (P : process A -o process B)) -o 
+               {Exists x:process A. active B (P x)}. 
+monp_left : active C (letp M (P : process A -o process B -o process C)) -o
+               {Exists x:process A.Exists y:process B. active C (P x y)}.
 
 % test
 
 init : type.
 initialize : 
-  init -o { active (lolli (at a) (at b)) (resource (lolli (at a) (at b))) *
-            active (lolli (at a) (at c)) (resource (lolli (at a) (at c))) *
-            active (lolli (at b) (at c)) (resource (lolli (at b) (at c))) *
-            % active (at a) (resource (at a)) *
-            active (at a) (resource (at a))
-          }.
+  init -o 
+  {Exists x : process (at a). 
+   Exists r1 : process (lolli (at a) (tensor (at b) (at c))).
+   Exists r2 : process (lolli (at b) (at c)).
+   Exists r3 : process (lolli (at b) (at a)).
+    active (tensor (at b) (at c)) 
+           (letp (app r1 x) 
+                 (\y:process (at b).
+                  \z:process (at c).pair y z)) *
+    active (lolli (at b) (at c)) (lambda (at b) (\y.app r2 y)) *
+    active (lolli (at b) (at a)) (lambda (at b) (\y.app r3 y))
+  }.
+                 
+% { active (lolli (at a) (at b)) (resource (lolli (at a) (at b))) *
+%             active (lolli (at a) (at c)) (resource (lolli (at a) (at c))) *
+%             active (lolli (at b) (at c)) (resource (lolli (at b) (at c))) *
+%             % active (at a) (resource (at a)) *
+%             active (at a) (resource (at a))
+%           }.
 
 #trace * init.
 
