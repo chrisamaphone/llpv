@@ -20,3 +20,26 @@ close_door : door_open -o idle_robot * door_closed.
 #interactive main.
 
 #trace _ main init.
+
+% If goal is {idle_robot, door_closed, idle_robot, side2}
+% Then a valid trace is:
+%   let [x5] = hold_door_open  [x1, [x3, []]];
+%   let [x8, x7, x6] = go_through  [x2, [x5, [x4, []]]];
+%   let [x10, x9] = close_door  [x7, []];
+% 
+% Separated into separate processes:
+%   \x1,x3. let (x5:door_open) = hold_door_open x1 x3 in
+%         <x5, \x7:door_open. let (x10,x9) = close_door x7 in
+%                 <x10, x9>>
+%   : idle_robot * door_closed 
+%       -o door_open * (door_open -o door_closed * idle_robot)
+%   
+%   \x2,x4,x5. let (x8, x7, x6) = go_through x2 x5 x4 in
+%                 <x6, x7, x8>
+%   : idle_robot * side1 * door_open -o idle_robot * door_open * side2.
+%
+
+
+
+
+
