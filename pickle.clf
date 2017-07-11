@@ -13,17 +13,15 @@ at : atom -> prop.
 one : prop.
 tensor : prop -> prop -> prop.
 lolli : prop -> prop -> prop.
-mon : prop -> prop.
 
 %% Terms/procs %%
 
 process : prop -> type.
 resource : prop -> type. % "atomic" in clf
 
-% resource : Pi a:atom. process (at a).
 pair : process A -o process B -o process (tensor A B).
-null : process one.
-ret  : process A -o process (mon A).
+rpair : resource A -o resource B -o resource (tensor A B).
+null : resource one.
 leta : resource (at A) -o (resource (at A) -o process B) 
            -o process B.
 letp : resource (tensor A B) -o (resource A -o resource B -o process C)
@@ -39,24 +37,24 @@ res : resource A -o process A.
 active : Pi A:prop. process A -> type.
 
 % Right rule judgment - normal CLF terms
-provable : Pi A:prop. process A -> type.
+provable : Pi A:prop. resource A -> type.
 
 % For resources - atomic CLF terms
 available : Pi A:prop. resource A -> type.
 
 % Right rules
-provable/active : provable A (res X) o- available A X.
-provable/tensor : provable (tensor T1 T2) (pair M1 M2) 
+provable/available : provable A R o- available A R.
+provable/tensor : provable (tensor T1 T2) (rpair M1 M2) 
                 o- provable T1 M1 * provable T2 M2.
-provable/lolli  : provable (lolli T1 T2) (lambda T1 M) o- 
-                      (Pi x.available T1 x -o provable T2 (M x)).
+% provable/lolli  : provable (lolli T1 T2) (lambda T1 M) o- 
+%                      (Pi x.available T1 x -o provable T2 (M x)).
 provable/one    : provable one null.
 
 % Operational semantics (left rules)
 tens_left : active (tensor T1 T2) (pair P1 P2) -o {active T1 P1 * active T2 P2}.
 beta : active B (app (lambda A M) (R : resource A)) -o
                 {active B (M R)}.
-loll_left : active (lolli A B) P * available A R -o
+loll_left : active (lolli A B) P * provable A R -o
                 {active B (app P R)}.
 mona_left : active B (leta (R : resource (at A)) (P : resource (at A) -o process B)) -o 
                {Exists x:resource (at A). active B (P x)}. 
@@ -64,50 +62,56 @@ monp_left : active C (letp (R : resource (tensor A B))
                             (P : resource A -o resource B -o process C)) 
           -o
                {Exists x:resource A.Exists y:resource B. active C (P x y)}.
-active_to_available : active A (res R) -o available A R.
+active_to_available : active A (res R) -o {available A R}.
 
 % tests
 
+x : resource (at a).
+r1 : resource (lolli (at a) (tensor (at b) (at c))).
+r2 : resource (lolli (at b) (at c)).
+r3 : resource (lolli (at b) (at a)).
+
 init : type.
-% initialize : 
-%   init -o 
-%   {Exists x : process (at a). 
-%    Exists r1 : process (lolli (at a) (tensor (at b) (at c))).
-%    Exists r2 : process (lolli (at b) (at c)).
-%    Exists r3 : process (lolli (at b) (at a)).
-%     active (tensor (at b) (at c)) 
-%            (letp (app r1 x) 
-%                  (\y:process (at b).
-%                   \z:process (at c).pair y z)) *
-%     active (lolli (at b) (at c)) (lambda (at b) (\y.app r2 y)) *
-%     active (lolli (at b) (at a)) (lambda (at b) (\y.app r3 y))
-%   }.
-% 
+initialize : 
+  init -o 
+  {
+   % Exists x : resource (at a). 
+   % Exists r1 : resource (lolli (at a) (tensor (at b) (at c))).
+   % Exists r2 : resource (lolli (at b) (at c)).
+   % Exists r3 : resource (lolli (at b) (at a)).
+    active (tensor (at b) (at c)) 
+           (letp (appr r1 x) 
+                 (\y:resource (at b).
+                  \z:resource (at c).pair (res y) (res z))) *
+    active (lolli (at b) (at c)) (lambda (at b) (\y.res (appr r2 y))) *
+    active (lolli (at b) (at a)) (lambda (at b) (\y.res (appr r3 y)))
+  }.
+
 
 %% Locking primitive
-lock : atom.
-c0 : atom.
-c1 : atom.
-initialize : init -o
-{Exists l : resource (at lock).
-  Exists crit0 : resource (lolli (at lock) (at c0)).
-  Exists done0 : resource (lolli (at c0) (at lock)).
-  Exists crit1 : resource (lolli (at lock) (at c1)).
-  Exists done1 : resource (lolli (at c1) (at lock)).
-    available (at lock) l
-*
-    active (lolli (at lock) (at lock)) 
-    (lambda (at lock)
-      (\l. leta (appr crit0 l) 
-        (\x0:resource (at c0). leta (appr done0 x0)
-          (\l':resource (at lock). res l'))))
-*
-    active (lolli (at lock) (at lock)) 
-    (lambda (at lock)
-      (\l. leta (appr crit1 l)
-        (\x1:resource (at c1). leta (appr done1 x1)
-          (\l':resource (at lock). res l'))))
-}.
+% lock : atom.
+% c0 : atom.
+% c1 : atom.
+% initialize : init -o
+% {Exists l : resource (at lock).
+%   Exists crit0 : resource (lolli (at lock) (at c0)).
+%   Exists done0 : resource (lolli (at c0) (at lock)).
+%   Exists crit1 : resource (lolli (at lock) (at c1)).
+%   Exists done1 : resource (lolli (at c1) (at lock)).
+%     available (at lock) l
+% *
+%     active (lolli (at lock) (at lock)) 
+%     (lambda (at lock)
+%       (\l. leta (appr crit0 l) 
+%         (\x0:resource (at c0). leta (appr done0 x0)
+%           (\l':resource (at lock). res l'))))
+% *
+%     active (lolli (at lock) (at lock)) 
+%     (lambda (at lock)
+%       (\l. leta (appr crit1 l)
+%         (\x1:resource (at c1). leta (appr done1 x1)
+%           (\l':resource (at lock). res l'))))
+% }.
                  
 % { active (lolli (at a) (at b)) (resource (lolli (at a) (at b))) *
 %             active (lolli (at a) (at c)) (resource (lolli (at a) (at c))) *
@@ -117,5 +121,10 @@ initialize : init -o
 %           }.
 
 #trace * init.
+
+
+% #query * * * 10
+% (init -o {Exists x:resource (at b).Exists y:resource (at c). 
+%           active A P * available B (R1 x) * available C (R2 y)}).
 
 

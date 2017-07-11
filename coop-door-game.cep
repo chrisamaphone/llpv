@@ -1,0 +1,22 @@
+
+door_closed : pred.
+door_open : pred.
+idle_robot : pred.
+side1 : pred.
+side2 : pred.
+
+context init =
+{idle_robot, idle_robot,
+  door_closed, side1}.
+
+stage main = {
+hold_door_open : idle_robot * door_closed -o door_open.
+
+go_through : idle_robot * door_open * side1 
+          -o idle_robot * door_open * side2.
+
+close_door : door_open -o idle_robot * door_closed.
+}
+#interactive main.
+
+#trace _ main init.
